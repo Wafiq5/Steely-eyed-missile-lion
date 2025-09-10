@@ -9,16 +9,20 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 
-@Autonomous(name = "SEMLAutonomous", group = "Steely Eye Missile Lion")
+@Autonomous(name = "SEMLAutonomous", group = "Steely Eyed Missile Lion")
 public class SEMLAutonomous extends LinearOpMode {
-//  All variables declaration
+//!  All variables declaration
+    // Driving wheels
     DcMotor backLeftDrive;
     DcMotor backRightDrive;
     DcMotor frontLeftDrive;
     DcMotor frontRightDrive;
-    ColorSensor color1;
-    DistanceSensor distance1;
-    BNO055IMU imu;
+
+    // Sensors
+    // TODO define sensors once added to the robot
+//    ColorSensor color1;
+//    DistanceSensor distance1;
+//    BNO055IMU imu;
 
 //  Tick calculations
     double wheelInchesToTicks = 1445.0/18.0;  // number of ticks per 18 inches forward/backward
@@ -50,13 +54,16 @@ public class SEMLAutonomous extends LinearOpMode {
         frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
-    public void getDistance(int waitTime) {
-        distanceCM = distance1.getDistance(DistanceUnit.CM);
-        telemetry.addData("test2", distanceCM);
-        telemetry.update();
 
-        sleep(waitTime);
-    }
+    //
+//    public void getDistance(int waitTime) {
+//        distanceCM = distance1.getDistance(DistanceUnit.CM);
+//        telemetry.addData("test2", distanceCM);
+//        telemetry.update();
+//
+//        sleep(waitTime);
+//    }
+
     public void stop(int milliseconds){
         backLeftDrive.setPower(0);
         backRightDrive.setPower(0);
@@ -129,22 +136,27 @@ public class SEMLAutonomous extends LinearOpMode {
     */
     @Override
     public void runOpMode() {
-        //Hardware mapping
-        // TODO When assigning motor names, keep in mind to use the following names (deviceName) to assign each motor
+        //! Hardware mapping
+        // Driving motors
+        // TODO (for oficial robot) When assigning motor names, keep in mind to use the following names (deviceName) to assign each motor
         backLeftDrive = hardwareMap.get(DcMotor.class, "backLeftDrive");
         backRightDrive = hardwareMap.get(DcMotor.class, "backRightDrive");
         frontLeftDrive = hardwareMap.get(DcMotor.class, "frontLeftDrive");
         frontRightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
-        color1 = hardwareMap.get(ColorSensor.class, "color1");
-        distance1 = hardwareMap.get(DistanceSensor.class, "distance1");
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
+
+        // Sensors
+        // TODO declare sensors once added to the robot
+//        color1 = hardwareMap.get(ColorSensor.class, "color1");
+//        distance1 = hardwareMap.get(DistanceSensor.class, "distance1");
+//        imu = hardwareMap.get(BNO055IMU.class, "imu");
 
         //Fix motor direction
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
 
-        //AUTONOMOUS CODES GO HERE
+        //! AUTONOMOUS CODES GO HERE
         waitForStart();
+
     }
 }
 
