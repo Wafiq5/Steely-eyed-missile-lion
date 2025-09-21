@@ -9,14 +9,15 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 @TeleOp(name="SELMTeleop_NormalDrive", group="SEML")
 public class SEMLTeleop_NormalDrive extends OpMode{
     public double drive, turn, strafe;
+    double speed = 0.5;
 
+    //* Hardware
     public DcMotor backLeftDrive, backRightDrive, frontLeftDrive, frontRightDrive;
     public Limelight3A limelight;
 
+    //* Bearing Align
     Double lastTx = null;
     boolean bearingAlignMode = false;
-
-    double speed = 0.5;
 
     @Override
     public void init() {
@@ -27,7 +28,6 @@ public class SEMLTeleop_NormalDrive extends OpMode{
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.setPollRateHz(100);
-        limelight.start();
 
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -39,7 +39,7 @@ public class SEMLTeleop_NormalDrive extends OpMode{
      */
     @Override
     public void start() {
-
+        limelight.start();
     }
 
     /**
@@ -47,7 +47,7 @@ public class SEMLTeleop_NormalDrive extends OpMode{
      */
     @Override
     public void loop() {
-        //* Fine tuning bearing
+        //* Fine tuning bearing align
         double bearingThreshold = 1;
         double Kp = 0.03;
 
@@ -64,28 +64,24 @@ public class SEMLTeleop_NormalDrive extends OpMode{
 
         LLResult result = limelight.getLatestResult();
 
+        //* If AprilTag is in view, use bearingAlign
+        //* Else, turn in the direction of the last known target X
         if (result != null && result.isValid()) {
             bearingAlign(result, Kp, bearingThreshold);
         } else{
-            // Look for target
-            if (bearingAlignMode) {
-                if(lastTx >= 0){
-                    strafe = speed;
-                }else if(lastTx < 0){
-                    strafe = - speed;
-                }
-            }
+            lastBearing();
         }
 
         move(speed, drive, strafe, turn);
 
+        //* Telemetry
         telemetry.addData("Align mode active", bearingAlignMode);
         telemetry.addData("LastTX", lastTx);
         telemetry.addData("Result", result != null && result.isValid());
         telemetry.update();
     }
 
-    /*! Methods*/
+    /*!Helper Methods*/
     /**
      * Movement function for mecanum drive
      * @param speed overall speed multiplier
@@ -143,6 +139,21 @@ public class SEMLTeleop_NormalDrive extends OpMode{
         //* Telemetry
         lastTx = tx;
         telemetry.addData("Target X", tx);
+    }
+
+    /**
+     * Turn in the direction of the last known target X
+     * <br><br>
+     * Used when the target is outside of view
+     */
+    public void lastBearing(){
+        if (bearingAlignMode) {
+            if(lastTx >= 0){
+                turn = speed;
+            }else if(lastTx < 0){
+                turn = - speed;
+            }
+        }
     }
 
     /**

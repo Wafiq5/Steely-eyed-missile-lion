@@ -92,11 +92,11 @@ public class SEMLAutonomous extends LinearOpMode {
         resetEncoders();
 
         forwardTicks = forwardInches * wheelInchesToTicks;
-        turnTicks = turnDegrees   * degreesTurnToTicks;
-        strafeTicks = strafeInches  * strafeInchesToTicks;
+        turnTicks = turnDegrees * degreesTurnToTicks;
+        strafeTicks = strafeInches * strafeInchesToTicks;
 
-        backLeftDrive.setTargetPosition((int) (forwardTicks + turnTicks - strafeTicks));
-        backRightDrive.setTargetPosition((int) (forwardTicks - turnTicks + strafeTicks));
+        backLeftDrive.setTargetPosition((int) ( - forwardTicks + turnTicks - strafeTicks));
+        backRightDrive.setTargetPosition((int) ( - forwardTicks - turnTicks + strafeTicks));
         frontLeftDrive.setTargetPosition((int) (forwardTicks + turnTicks + strafeTicks));
         frontRightDrive.setTargetPosition((int) (forwardTicks - turnTicks - strafeTicks));
 
@@ -112,19 +112,6 @@ public class SEMLAutonomous extends LinearOpMode {
         frontLeftDrive.setPower(power);
         frontRightDrive.setPower(power);
 
-        // Keep looping while the motors are still running AND the OpMode is active
-        while( opModeIsActive() &&
-                (
-                backLeftDrive.isBusy() &&
-                backRightDrive.isBusy() &&
-                frontLeftDrive.isBusy() &&
-                frontRightDrive.isBusy()
-                )
-        ){
-            // Display encoder telemetry
-            telemetry.update();
-
-        }
         stop(200);
     }
 
