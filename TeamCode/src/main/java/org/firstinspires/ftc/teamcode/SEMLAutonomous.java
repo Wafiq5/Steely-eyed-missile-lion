@@ -72,10 +72,6 @@ public class SEMLAutonomous extends LinearOpMode {
         sleep(milliseconds);
     }
 
-    public void driveFwdCM(double power, double forwardCM){
-        moveWEncoders( power,  forwardCM * CMtoInches,  0,  0);
-    }
-
     /**
      * Autonomous directional movements function: moveWEncoders
      *

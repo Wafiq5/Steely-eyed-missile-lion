@@ -33,7 +33,6 @@ public class SEMLTeleop_NormalDrive extends OpMode{
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
     }
 
-
     /**
      * Code to run ONCE when the driver hits START
      */
@@ -72,6 +71,7 @@ public class SEMLTeleop_NormalDrive extends OpMode{
             lastBearing();
         }
 
+        //* Move robot
         move(speed, drive, strafe, turn);
 
         //* Telemetry
@@ -81,7 +81,7 @@ public class SEMLTeleop_NormalDrive extends OpMode{
         telemetry.update();
     }
 
-    /*!Helper Methods*/
+    //! Helper Methods
     /**
      * Movement function for mecanum drive
      * @param speed overall speed multiplier
