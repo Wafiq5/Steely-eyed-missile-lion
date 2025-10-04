@@ -1,23 +1,27 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 
-@TeleOp(name="SELMTeleop_NormalDrive", group="SEML")
-public class SEMLTeleop_NormalDrive extends OpMode{
+@TeleOp(name="SEMLTeleop_v2_Emiliano", group="Steely Eyed Missile Lion")
+public class SEMLTeleop_v2_Emiliano extends OpMode{
     public double drive, turn, strafe;
-    double speed = 0.5;
+    double speed = .75;
 
     //* Hardware
     public DcMotor backLeftDrive, backRightDrive, frontLeftDrive, frontRightDrive;
+    public DcMotor flyWheelLeft;
+    public DcMotor flyWheelRight;
+    public Servo flyWheelPusher;
     public Limelight3A limelight;
 
-    //* Bearing Align
-    Double lastTx = null;
-    boolean bearingAlignMode = false;
+    //* FlyWheel Speed
+    double flyWheelSpeed_closeRange;
+    double flyWheelSpeed_highRange;
 
     @Override
     public void init() {
@@ -25,6 +29,10 @@ public class SEMLTeleop_NormalDrive extends OpMode{
         backRightDrive = hardwareMap.get(DcMotor.class, "backRightDrive");
         frontLeftDrive = hardwareMap.get(DcMotor.class, "frontLeftDrive");
         frontRightDrive = hardwareMap.get(DcMotor.class, "frontRightDrive");
+
+        flyWheelLeft = hardwareMap.get(DcMotor.class, "flyWheelLeft");
+        flyWheelRight = hardwareMap.get(DcMotor.class, "flyWheelRight");
+        flyWheelPusher = hardwareMap.get(Servo.class, "flyWheelPusher");
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.setPollRateHz(100);
@@ -46,39 +54,32 @@ public class SEMLTeleop_NormalDrive extends OpMode{
      */
     @Override
     public void loop() {
-        //* Fine tuning bearing align
+        //*Bearing
         double bearingThreshold = 1;
         double Kp = 0.03;
-
-        //* Toggle bearing align mode
-        boolean gamepadAState = gamepad1.a;
-        if (gamepad1.a && !gamepadAState) {
-            bearingAlignMode = !bearingAlignMode;
-        }
-
-        //* Normal Drive (Turn w/ left joystick)
-        drive = gamepad1.right_stick_y;
-        strafe = gamepad1.right_stick_x;
-        turn = gamepad1.left_stick_x;
-
         LLResult result = limelight.getLatestResult();
 
-        //* If AprilTag is in view, use bearingAlign
-        //* Else, turn in the direction of the last known target X
+        //* Toggle flyWheel Mode
+        flyWheelSpeed_closeRange = 0.35;
+        flyWheelSpeed_highRange = 0.40;
+
+        //* Normal Drive (Turn w/ left joystick)
+        drive = -gamepad1.right_stick_y;
+        strafe = -gamepad1.right_stick_x;
+        turn = gamepad1.left_stick_x;
+
+
+
+
+        //* Bearing
         if (result != null && result.isValid()) {
             bearingAlign(result, Kp, bearingThreshold);
-        } else{
-            lastBearing();
         }
 
+        flywheel();
+        controlSpeed();
         //* Move robot
         move(speed, drive, strafe, turn);
-
-        //* Telemetry
-        telemetry.addData("Align mode active", bearingAlignMode);
-        telemetry.addData("LastTX", lastTx);
-        telemetry.addData("Result", result != null && result.isValid());
-        telemetry.update();
     }
 
     //! Helper Methods
@@ -94,26 +95,27 @@ public class SEMLTeleop_NormalDrive extends OpMode{
      * </ul>
      */
     public void move(double speed, double drive, double strafe, double turn){
-        double frontLeftPower = drive - strafe - turn;
-        double frontRightPower = drive + strafe + turn;
-        double backLeftPower = - drive + strafe - turn;
-        double backRightPower = - drive - strafe + turn;
+        double backLeftPower = drive + strafe + turn;
+        double backRightPower = drive - strafe - turn;
+        double frontLeftPower = drive - strafe + turn;
+        double frontRightPower = drive + strafe - turn;
 
         double max = Math.max(1.0,
-                Math.max(Math.abs(frontLeftPower),
-                        Math.max(Math.abs(frontRightPower),
-                                Math.max(Math.abs(backLeftPower),
-                                        Math.abs(backRightPower)))));
+                Math.max(Math.abs(backLeftPower),
+                        Math.max(Math.abs(backRightPower),
+                                Math.max(Math.abs(frontLeftPower),
+                                        Math.abs(frontRightPower)))));
 
-        frontLeftPower /= max;
-        frontRightPower /= max;
         backLeftPower /= max;
         backRightPower /= max;
+        frontLeftPower /= max;
+        frontRightPower /= max;
 
-        frontLeftDrive.setPower(speed * (frontLeftPower));
-        frontRightDrive.setPower(speed * (frontRightPower));
         backLeftDrive.setPower(speed * (backLeftPower));
         backRightDrive.setPower(speed * (backRightPower));
+        frontLeftDrive.setPower(speed * (frontLeftPower));
+        frontRightDrive.setPower(speed * (frontRightPower));
+
     }
 
     /**
@@ -124,35 +126,41 @@ public class SEMLTeleop_NormalDrive extends OpMode{
      */
     public void bearingAlign(LLResult result, double Kp, double bearingThreshold){
         double tx = result.getTx();
-
-        if (bearingAlignMode) {
-            strafe = 0;
-            telemetry.addData("tx", tx);
-            telemetry.update();
-
+        if(gamepad1.left_bumper){
             if (Math.abs(tx) > bearingThreshold) {
-                strafe = Kp * tx;
-                strafe = Math.max(- speed, Math.min(speed, strafe)); // clamp
+                turn = Kp * tx;
+                turn = Math.max(- speed, Math.min(speed, turn)); // clamp
             }
         }
 
         //* Telemetry
-        lastTx = tx;
         telemetry.addData("Target X", tx);
     }
 
-    /**
-     * Turn in the direction of the last known target X
-     * <br><br>
-     * Used when the target is outside of view
-     */
-    public void lastBearing(){
-        if (bearingAlignMode) {
-            if(lastTx >= 0){
-                turn = speed;
-            }else if(lastTx < 0){
-                turn = - speed;
-            }
+    public void controlSpeed(){
+        if(gamepad1.left_trigger > 0){
+            speed = 0.3;
+        }else{
+            speed = .75;
+        }
+    }
+
+    public void flywheel(){
+        if(gamepad1.right_trigger > 0){
+            flyWheelLeft.setPower(flyWheelSpeed_highRange);
+            flyWheelRight.setPower(-flyWheelSpeed_highRange);
+        }else if(gamepad1.right_bumper){
+            flyWheelLeft.setPower(flyWheelSpeed_closeRange);
+            flyWheelRight.setPower(-flyWheelSpeed_closeRange);
+        }else{
+            flyWheelLeft.setPower(0);
+            flyWheelRight.setPower(0);
+        }
+
+        if(gamepad1.a){
+            flyWheelPusher.setPosition(0.1);
+        }else{
+            flyWheelPusher.setPosition(0.5);
         }
     }
 
